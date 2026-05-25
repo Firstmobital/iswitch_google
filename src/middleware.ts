@@ -47,8 +47,8 @@ export async function middleware(request: NextRequest) {
     return NextResponse.redirect(new URL('/auth/login', request.url))
   }
 
-  // Already logged in → redirect away from auth pages
-  if (user && isAuthRoute && !pathname.startsWith('/auth/pending') && !pathname.startsWith('/auth/verify') && !pathname.startsWith('/auth/callback')) {
+  // Already logged in → route based on profile state (except callback)
+  if (user && isAuthRoute && !pathname.startsWith('/auth/callback')) {
     const { data: profileData } = await supabase
       .from('profiles')
       .select('role, approval_status')
@@ -65,7 +65,7 @@ export async function middleware(request: NextRequest) {
     if (profile.approval_status === 'approved') {
       return NextResponse.redirect(new URL('/retailer/schemes', request.url))
     }
-    if (profile.approval_status === 'pending') {
+    if (profile.approval_status === 'pending' && !pathname.startsWith('/auth/pending')) {
       return NextResponse.redirect(new URL('/auth/pending', request.url))
     }
   }

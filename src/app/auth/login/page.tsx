@@ -36,7 +36,7 @@ export default function LoginPage() {
   async function onSubmit(data: FormData) {
     setLoading(true)
     setServerError('')
-    const { error } = await supabase.auth.signInWithPassword({
+    const { data: signInData, error } = await supabase.auth.signInWithPassword({
       email: data.email,
       password: data.password,
     })
@@ -45,10 +45,25 @@ export default function LoginPage() {
       setLoading(false)
       return
     }
-    const { data: profileData } = await supabase
+
+    const userId = signInData.user?.id
+    if (!userId) {
+      setServerError('Unable to load account. Please try again.')
+      setLoading(false)
+      return
+    }
+
+    const { data: profileData, error: profileError } = await supabase
       .from('profiles')
       .select('role, approval_status')
+      .eq('id', userId)
       .single()
+
+    if (profileError) {
+      setServerError(profileError.message)
+      setLoading(false)
+      return
+    }
 
     const profile = profileData as ProfileAccess | null
 
