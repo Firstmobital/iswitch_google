@@ -7,14 +7,14 @@
 create extension if not exists "uuid-ossp";
 
 -- ── ENUMS ──────────────────────────────────────────────────
-create type user_role as enum ('retailer', 'admin');
-create type approval_status as enum ('pending', 'approved', 'rejected');
-create type scheme_status as enum ('draft', 'published', 'expired');
-create type swipe_type as enum ('Full Swipe', 'NCEMI', 'Full Swipe/NCEMI');
-create type finance_partner as enum ('Bajaj Finance', 'IDFC Paper Finance', 'TVS Credit');
+create type if not exists user_role as enum ('retailer', 'admin');
+create type if not exists approval_status as enum ('pending', 'approved', 'rejected');
+create type if not exists scheme_status as enum ('draft', 'published', 'expired');
+create type if not exists swipe_type as enum ('Full Swipe', 'NCEMI', 'Full Swipe/NCEMI');
+create type if not exists finance_partner as enum ('Bajaj Finance', 'IDFC Paper Finance', 'TVS Credit');
 
 -- ── PROFILES ───────────────────────────────────────────────
-create table profiles (
+create table if not exists profiles (
   id              uuid primary key references auth.users(id) on delete cascade,
   email           text not null,
   full_name       text,
@@ -29,7 +29,7 @@ create table profiles (
 );
 
 -- ── MOBILE MODELS ──────────────────────────────────────────
-create table mobile_models (
+create table if not exists mobile_models (
   id             uuid primary key default uuid_generate_v4(),
   name           text not null,
   storage        text not null,
@@ -41,7 +41,7 @@ create table mobile_models (
 );
 
 -- ── SCHEMES ────────────────────────────────────────────────
-create table schemes (
+create table if not exists schemes (
   id                    uuid primary key default uuid_generate_v4(),
   model_id              uuid not null references mobile_models(id) on delete cascade,
   status                scheme_status not null default 'draft',
@@ -64,7 +64,7 @@ create table schemes (
 );
 
 -- ── EXCHANGE OFFERS ────────────────────────────────────────
-create table exchange_offers (
+create table if not exists exchange_offers (
   id              uuid primary key default uuid_generate_v4(),
   scheme_id       uuid not null references schemes(id) on delete cascade,
   platform        text not null,
@@ -76,7 +76,7 @@ create table exchange_offers (
 );
 
 -- ── FINANCE SCHEMES ────────────────────────────────────────
-create table finance_schemes (
+create table if not exists finance_schemes (
   id                  uuid primary key default uuid_generate_v4(),
   scheme_id           uuid not null references schemes(id) on delete cascade,
   partner             finance_partner not null,
