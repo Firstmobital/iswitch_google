@@ -5,7 +5,6 @@ import { useRouter } from 'next/navigation'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
-import { createClient } from '@/lib/supabase/client'
 import { ROUTES } from '@/lib/config'
 import { Save, Trash2, Plus } from 'lucide-react'
 import Link from 'next/link'
@@ -40,7 +39,6 @@ interface Props {
 
 export default function SchemeForm({ models, scheme }: Props) {
   const router = useRouter()
-  const supabase = createClient()
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
 
@@ -86,6 +84,7 @@ export default function SchemeForm({ models, scheme }: Props) {
     ].filter(Boolean) as string[]
 
     const payload = {
+      id: scheme?.id,
       model_id: data.model_id,
       status: data.status,
       mop: data.mop,
@@ -103,26 +102,48 @@ export default function SchemeForm({ models, scheme }: Props) {
       notes: data.notes || null,
     }
 
-    let schemeId = scheme?.id
+    try {
+      const response = await fetch('/api/schemes', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      })
 
-    if (scheme) {
-      const { error: err } = await (supabase.from('schemes') as any).update(payload).eq('id', scheme.id)
-      if (err) { setError(err.message); setLoading(false); return }
-    } else {
-      const { data: created, error: err } = await (supabase.from('schemes') as any).insert(payload).select().single()
-      if (err) { setError(err.message); setLoading(false); return }
-      schemeId = created.id
+      if (!response.ok) {
+        const data = await response.json()
+        throw new Error(data.error || `Failed (HTTP ${response.status})`)
+      }
+
+      router.push(ROUTES.admin.schemes)
+      router.refresh()
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Unknown error')
+      setLoading(false)
     }
-
-    router.push(ROUTES.admin.schemes)
-    router.refresh()
   }
 
   async function deleteScheme() {
     if (!scheme || !confirm('Delete this scheme? This cannot be undone.')) return
-    await (supabase.from('schemes') as any).delete().eq('id', scheme.id)
-    router.push(ROUTES.admin.schemes)
-    router.refresh()
+    
+    setLoading(true)
+    setError('')
+
+    try {
+      const response = await fetch(`/api/schemes?id=${scheme.id}`, {
+        method: 'DELETE',
+      })
+
+      if (!response.ok) {
+        const data = await response.json()
+        throw new Error(data.error || `Failed (HTTP ${response.status})`)
+      }
+
+      router.push(ROUTES.admin.schemes)
+      router.refresh()
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Unknown error')
+      setLoading(false)
+    }
   }
 
   const Section = ({ title }: { title: string }) => (
